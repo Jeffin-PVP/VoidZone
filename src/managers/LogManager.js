@@ -686,6 +686,225 @@ class LogManager {
 
     }
 
+    static async warning({
+        guild,
+        user,
+        moderator,
+        reason,
+        warningId,
+        total
+    }) {
+
+        const embed = new EmbedBuilder()
+
+            .setColor("#FEE75C")
+
+            .setTitle("⚠️ ADVERTÊNCIA APLICADA")
+
+            .setThumbnail(
+                user.displayAvatarURL({
+                    size: 256
+                })
+            )
+
+            .addFields(
+
+                {
+                    name: "👤 Usuário",
+                    value:
+                        `${user.tag}\n` +
+                        `\`${user.id}\``,
+                    inline: true
+                },
+
+                {
+                    name: "🛡️ Moderador",
+                    value:
+                        `${moderator.tag}\n` +
+                        `\`${moderator.id}\``,
+                    inline: true
+                },
+
+                {
+                    name: "🔢 Advertência",
+                    value:
+                        `#${warningId}\n` +
+                        `Total: ${total}`,
+                    inline: true
+                },
+
+                {
+                    name: "📝 Motivo",
+                    value:
+                        reason,
+                    inline: false
+                }
+
+            )
+
+            .setTimestamp()
+
+            .setFooter({
+                text: "VoidZone Logs • Warn"
+            });
+
+
+        await this.send(
+            guild,
+            embed
+        );
+
+    }
+
+    /**
+ * Log de remoção de uma advertência específica.
+ */
+    static async warningRemoved({
+        guild,
+        user,
+        moderator,
+        warning,
+        remaining
+    }) {
+
+        const embed = new EmbedBuilder()
+
+            .setColor("#57F287")
+
+            .setTitle("🗑️ ADVERTÊNCIA REMOVIDA")
+
+            .setThumbnail(
+                user
+                    ? user.displayAvatarURL({
+                        size: 256
+                    })
+                    : null
+            )
+
+            .addFields(
+
+                {
+                    name: "👤 Usuário",
+                    value:
+                        user
+                            ? `${user.tag}\n\`${user.id}\``
+                            : `ID: \`${warning.user_id}\``,
+                    inline: true
+                },
+
+                {
+                    name: "🛡️ Moderador",
+                    value:
+                        `${moderator.tag}\n` +
+                        `\`${moderator.id}\``,
+                    inline: true
+                },
+
+                {
+                    name: "🔢 Advertência",
+                    value:
+                        `#${warning.id}`,
+                    inline: true
+                },
+
+                {
+                    name: "📝 Motivo original",
+                    value:
+                        warning.reason ||
+                        "Nenhum motivo informado.",
+                    inline: false
+                },
+
+                {
+                    name: "📊 Warns restantes",
+                    value:
+                        `${remaining}`,
+                    inline: true
+                }
+
+            )
+
+            .setTimestamp()
+
+            .setFooter({
+                text: "VoidZone Logs • Unwarn"
+            });
+
+
+        await this.send(
+            guild,
+            embed
+        );
+
+    }
+
+    static async warningsCleared({
+        guild,
+        user,
+        moderator,
+        removed
+    }) {
+
+        const embed = new EmbedBuilder()
+
+            .setColor("#ED4245")
+
+            .setTitle(
+                "🗑️ TODOS OS WARNS REMOVIDOS"
+            )
+
+            .setThumbnail(
+                user
+                    ? user.displayAvatarURL({
+                        size: 256
+                    })
+                    : null
+            )
+
+            .addFields(
+
+                {
+                    name: "👤 Usuário",
+                    value:
+                        user
+                            ? `${user.tag}\n\`${user.id}\``
+                            : "Usuário desconhecido",
+                    inline: true
+                },
+
+                {
+                    name: "🛡️ Moderador",
+                    value:
+                        `${moderator.tag}\n\`${moderator.id}\``,
+                    inline: true
+                },
+
+                {
+                    name: "🗑️ Advertências removidas",
+                    value:
+                        `${removed}`,
+                    inline: true
+                }
+
+            )
+
+            .setTimestamp()
+
+            .setFooter({
+
+                text:
+                    "VoidZone Logs • Clear Warns"
+
+            });
+
+
+        await this.send(
+            guild,
+            embed
+        );
+
+    }
+
 }
 
 module.exports = LogManager;

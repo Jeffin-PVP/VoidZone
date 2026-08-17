@@ -1,7 +1,6 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits,
-    MessageFlags
+    PermissionFlagsBits
 } = require("discord.js");
 
 const EmbedManager =
@@ -13,47 +12,50 @@ const LogManager =
 
 module.exports = {
 
+    ephemeral: true,
+
+
     data: new SlashCommandBuilder()
 
-        .setName("clear")
+        .setName("lock")
 
-        .setDescription("Apaga mensagens deste canal.")
+        .setDescription("Bloqueia o canal para membros.")
 
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option
-                .setName("quantidade")
-                .setDescription("Quantidade de mensagens a apagar.")
-                .setRequired(true)
-                .setMinValue(1)
-                .setMaxValue(100)
+                .setName("motivo")
+                .setDescription("Motivo do bloqueio.")
+                .setRequired(false)
+                .setMaxLength(500)
         )
 
         .setDefaultMemberPermissions(
-            PermissionFlagsBits.ManageMessages
+            PermissionFlagsBits.ManageChannels
         ),
 
 
     async execute(interaction) {
 
-        const amount =
-            interaction.options.getInteger("quantidade");
-
-
         const channel =
             interaction.channel;
 
 
+        const reason =
+            interaction.options.getString("motivo")
+            || "Nenhum motivo informado.";
+
+
         if (!channel.isTextBased()) {
 
-            await interaction.followUp({
+            await interaction.editReply({
 
                 embeds: [
+
                     EmbedManager.error(
                         "Este comando só pode ser usado em canais de texto."
                     )
-                ],
 
-                flags: MessageFlags.Ephemeral
+                ]
 
             });
 
@@ -64,42 +66,35 @@ module.exports = {
 
         try {
 
-            const messages =
-                await channel.bulkDelete(
-                    amount,
-                    true
-                );
+            await channel.permissionOverwrites.edit(
+
+                interaction.guild.roles.everyone,
+
+                {
+                    SendMessages: false
+                }
+
+            );
 
 
-            const deleted =
-                messages.size;
-
-
-            /*
-             * IMPORTANTE:
-             *
-             * Não usamos editReply() aqui.
-             *
-             * O bulkDelete pode ter apagado
-             * a mensagem original da interação.
-             */
-
-            await interaction.followUp({
+            await interaction.editReply({
 
                 embeds: [
 
                     EmbedManager.success(
-                        `🧹 Foram apagadas **${deleted} mensagem(ns)**.`
+
+                        `🔒 Este canal foi bloqueado.\n\n` +
+
+                        `📝 **Motivo:** ${reason}`
+
                     )
 
-                ],
-
-                flags: MessageFlags.Ephemeral
+                ]
 
             });
 
 
-            await LogManager.messageClear({
+            await LogManager.channelLock({
 
                 guild:
                     interaction.guild,
@@ -109,8 +104,7 @@ module.exports = {
                 moderator:
                     interaction.user,
 
-                amount:
-                    deleted
+                reason
 
             });
 
@@ -118,30 +112,30 @@ module.exports = {
         } catch (error) {
 
             console.error(
-                "❌ Erro ao limpar mensagens:",
+                "❌ Erro ao bloquear canal:",
                 error
             );
 
 
             try {
 
-                await interaction.followUp({
+                await interaction.editReply({
 
                     embeds: [
-                        EmbedManager.error(
-                            "Não foi possível apagar as mensagens."
-                        )
-                    ],
 
-                    flags: MessageFlags.Ephemeral
+                        EmbedManager.error(
+                            "Não foi possível bloquear este canal."
+                        )
+
+                    ]
 
                 });
 
-            } catch (responseError) {
+            } catch (replyError) {
 
                 console.error(
                     "❌ Não foi possível responder à interação:",
-                    responseError
+                    replyError
                 );
 
             }
