@@ -1,10 +1,6 @@
-const {
-    Events,
-    AuditLogEvent
-} = require("discord.js");
+const { Events } = require("discord.js");
 
-const LogManager =
-    require("../managers/LogManager");
+const LogManager = require("../managers/LogManager");
 
 module.exports = {
 
@@ -12,179 +8,100 @@ module.exports = {
 
     async execute(oldMember, newMember) {
 
-        try {
+        /*
+         * =====================================================
+         * APELIDO ALTERADO
+         * =====================================================
+         */
 
-            const oldTimeout =
-                oldMember.communicationDisabledUntilTimestamp;
+        if (oldMember.nickname !== newMember.nickname) {
 
-            const newTimeout =
-                newMember.communicationDisabledUntilTimestamp;
+            try {
 
-
-            // ⏳ TIMEOUT APLICADO
-            if (
-                !oldTimeout &&
-                newTimeout
-            ) {
-
-                await new Promise(resolve =>
-                    setTimeout(resolve, 500)
+                await LogManager.memberNicknameUpdate(
+                    oldMember,
+                    newMember
                 );
 
+            } catch (error) {
 
-                const logs =
-                    await newMember.guild.fetchAuditLogs({
-                        type: AuditLogEvent.MemberUpdate,
-                        limit: 10
-                    });
-
-
-                const entry =
-                    logs.entries.find(entry =>
-
-                        entry.target?.id ===
-                        newMember.id &&
-
-                        Date.now() -
-                        entry.createdTimestamp <
-                        5000
-
-                    );
-
-
-                await LogManager.memberTimeout({
-
-                    guild:
-                        newMember.guild,
-
-                    target:
-                        newMember.user,
-
-                    moderator:
-                        entry?.executor ||
-                        newMember.guild.client.user,
-
-                    reason:
-                        entry?.reason ||
-                        "Nenhum motivo informado.",
-
-                    duration:
-                        formatDuration(
-                            newTimeout -
-                            Date.now()
-                        )
-
-                });
+                console.error(
+                    "❌ Erro ao registrar alteração de apelido:",
+                    error
+                );
 
             }
 
-
-            // 🔓 TIMEOUT REMOVIDO
-            if (
-                oldTimeout &&
-                !newTimeout
-            ) {
-
-                await new Promise(resolve =>
-                    setTimeout(resolve, 500)
-                );
+        }
 
 
-                const logs =
-                    await newMember.guild.fetchAuditLogs({
-                        type: AuditLogEvent.MemberUpdate,
-                        limit: 10
-                    });
+        /*
+         * =====================================================
+         * CARGO ADICIONADO
+         * =====================================================
+         */
 
-
-                const entry =
-                    logs.entries.find(entry =>
-
-                        entry.target?.id ===
-                        newMember.id &&
-
-                        Date.now() -
-                        entry.createdTimestamp <
-                        5000
-
-                    );
-
-
-                await LogManager.memberUntimeout({
-
-                    guild:
-                        newMember.guild,
-
-                    target:
-                        newMember.user,
-
-                    moderator:
-                        entry?.executor ||
-                        newMember.guild.client.user,
-
-                    reason:
-                        entry?.reason ||
-                        "Nenhum motivo informado."
-
-                });
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "❌ Erro ao registrar alteração de membro:",
-                error
+        const addedRoles =
+            newMember.roles.cache.filter(
+                role =>
+                    !oldMember.roles.cache.has(role.id)
             );
+
+
+        for (const role of addedRoles.values()) {
+
+            try {
+
+                await LogManager.memberRoleAdd(
+                    newMember,
+                    role
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "❌ Erro ao registrar cargo adicionado:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        /*
+         * =====================================================
+         * CARGO REMOVIDO
+         * =====================================================
+         */
+
+        const removedRoles =
+            oldMember.roles.cache.filter(
+                role =>
+                    !newMember.roles.cache.has(role.id)
+            );
+
+
+        for (const role of removedRoles.values()) {
+
+            try {
+
+                await LogManager.memberRoleRemove(
+                    newMember,
+                    role
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "❌ Erro ao registrar cargo removido:",
+                    error
+                );
+
+            }
 
         }
 
     }
 
 };
-
-
-function formatDuration(milliseconds) {
-
-    const totalMinutes =
-        Math.max(
-            1,
-            Math.ceil(
-                milliseconds / 60000
-            )
-        );
-
-
-    const days =
-        Math.floor(
-            totalMinutes / 1440
-        );
-
-
-    const hours =
-        Math.floor(
-            (totalMinutes % 1440) / 60
-        );
-
-
-    const minutes =
-        totalMinutes % 60;
-
-
-    if (days > 0) {
-
-        return `${days}d ${hours}h ${minutes}min`;
-
-    }
-
-
-    if (hours > 0) {
-
-        return `${hours}h ${minutes}min`;
-
-    }
-
-
-    return `${minutes}min`;
-
-}

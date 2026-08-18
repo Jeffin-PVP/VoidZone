@@ -3,6 +3,9 @@ const database = require("./DatabaseManager");
 
 function migrate() {
 
+    /*
+     * Tabelas principais
+     */
     database.exec(`
 
         CREATE TABLE IF NOT EXISTS guilds (
@@ -45,6 +48,8 @@ function migrate() {
 
             log_channel_id TEXT,
 
+            mod_log_channel_id TEXT,
+
             created_at INTEGER NOT NULL
 
         );
@@ -66,10 +71,84 @@ function migrate() {
 
         );
 
+        CREATE TABLE IF NOT EXISTS lockdown_channels (
+
+            guild_id TEXT NOT NULL,
+
+            channel_id TEXT NOT NULL,
+
+            PRIMARY KEY (
+                guild_id,
+                channel_id
+            )
+
+        );
+
+        CREATE TABLE IF NOT EXISTS lockdown_permissions (
+
+            guild_id TEXT NOT NULL,
+
+            channel_id TEXT NOT NULL,
+
+            permissions TEXT NOT NULL,
+
+            PRIMARY KEY (
+                guild_id,
+                channel_id
+            )
+
+        );
+
     `);
 
 
-    console.log("📦 Migrations executadas.");
+    /*
+     * =====================================================
+     * MIGRATIONS DE ESTRUTURA
+     * =====================================================
+     *
+     * O CREATE TABLE IF NOT EXISTS acima não altera
+     * tabelas que já existem.
+     *
+     * Por isso verificamos se a coluna já existe antes
+     * de adicioná-la.
+     */
+
+
+    const columns = database
+        .prepare(`
+            PRAGMA table_info(guild_settings)
+        `)
+        .all();
+
+
+    const hasModLogChannel =
+        columns.some(
+            column =>
+                column.name === "mod_log_channel_id"
+        );
+
+
+    if (!hasModLogChannel) {
+
+        database.exec(`
+            ALTER TABLE guild_settings
+            ADD COLUMN mod_log_channel_id TEXT
+        `);
+
+
+        console.log(
+            "🔄 Coluna mod_log_channel_id adicionada."
+        );
+
+    }
+
+
+
+
+    console.log(
+        "📦 Migrations executadas."
+    );
 
 }
 
