@@ -4,7 +4,7 @@ const database = require("../database/DatabaseManager");
 class LockdownManager {
 
 
-    /**
+    /*
      * =====================================================
      * CANAIS LIBERADOS DURANTE O LOCKDOWN
      * =====================================================
@@ -41,7 +41,7 @@ class LockdownManager {
 
 
     /**
-     * Remove um canal da lista.
+     * Remove um canal da lista de canais liberados.
      */
     static removeChannel(
         guildId,
@@ -120,7 +120,7 @@ class LockdownManager {
 
 
     /**
-     * Retorna apenas os IDs dos canais.
+     * Retorna somente os IDs dos canais liberados.
      */
     static getAllowedChannelIds(
         guildId
@@ -137,7 +137,8 @@ class LockdownManager {
 
 
     /**
-     * Remove todos os canais configurados.
+     * Remove todos os canais configurados
+     * como canais de emergência.
      */
     static clearChannels(
         guildId
@@ -159,11 +160,13 @@ class LockdownManager {
 
     }
 
-    /**
- * =====================================================
- * PERMISSÕES DO LOCKDOWN
- * =====================================================
- */
+
+    /*
+     * =====================================================
+     * PERMISSÕES DO LOCKDOWN
+     * =====================================================
+     */
+
 
     /**
      * Salva as permissões originais de um canal.
@@ -176,14 +179,14 @@ class LockdownManager {
 
         database.run(
             `
-        INSERT OR REPLACE INTO lockdown_permissions (
-            guild_id,
-            channel_id,
-            permissions
-        )
+            INSERT OR REPLACE INTO lockdown_permissions (
+                guild_id,
+                channel_id,
+                permissions
+            )
 
-        VALUES (?, ?, ?)
-        `,
+            VALUES (?, ?, ?)
+            `,
             [
                 guildId,
                 channelId,
@@ -202,9 +205,8 @@ class LockdownManager {
         channelId
     ) {
 
-        const result =
-            database.get(
-                `
+        const result = database.get(
+            `
             SELECT permissions
 
             FROM lockdown_permissions
@@ -212,11 +214,11 @@ class LockdownManager {
             WHERE guild_id = ?
             AND channel_id = ?
             `,
-                [
-                    guildId,
-                    channelId
-                ]
-            );
+            [
+                guildId,
+                channelId
+            ]
+        );
 
 
         if (!result) {
@@ -241,11 +243,11 @@ class LockdownManager {
 
         database.run(
             `
-        DELETE FROM lockdown_permissions
+            DELETE FROM lockdown_permissions
 
-        WHERE guild_id = ?
-        AND channel_id = ?
-        `,
+            WHERE guild_id = ?
+            AND channel_id = ?
+            `,
             [
                 guildId,
                 channelId
@@ -265,10 +267,10 @@ class LockdownManager {
 
         database.run(
             `
-        DELETE FROM lockdown_permissions
+            DELETE FROM lockdown_permissions
 
-        WHERE guild_id = ?
-        `,
+            WHERE guild_id = ?
+            `,
             [
                 guildId
             ]
@@ -276,13 +278,8 @@ class LockdownManager {
 
     }
 
-    /**
- * =====================================================
- * ESTADO DO LOCKDOWN
- * =====================================================
- */
 
-    static isActive(guildId) {
+    static countSavedPermissions(guildId) {
 
         const result = database.get(
             `
@@ -292,119 +289,14 @@ class LockdownManager {
 
         WHERE guild_id = ?
         `,
-            [guildId]
-        );
-
-        return result.total > 0;
-
-    }
-
-
-    /**
-     * Salva as permissões atuais de um canal.
-     */
-    static saveChannelPermissions(
-        guildId,
-        channelId,
-        permissions
-    ) {
-
-        database.run(
-            `
-        INSERT OR REPLACE INTO lockdown_permissions (
-            guild_id,
-            channel_id,
-            permissions
-        )
-
-        VALUES (?, ?, ?)
-        `,
             [
-                guildId,
-                channelId,
-                JSON.stringify(permissions)
+                guildId
             ]
         );
 
-    }
-
-
-    /**
-     * Obtém as permissões salvas.
-     */
-    static getChannelPermissions(
-        guildId,
-        channelId
-    ) {
-
-        const result = database.get(
-            `
-        SELECT permissions
-
-        FROM lockdown_permissions
-
-        WHERE guild_id = ?
-        AND channel_id = ?
-        `,
-            [
-                guildId,
-                channelId
-            ]
-        );
-
-        if (!result) {
-            return null;
-        }
-
-        return JSON.parse(
-            result.permissions
-        );
+        return result.total;
 
     }
-
-
-    /**
-     * Remove as permissões salvas.
-     */
-    static removeChannelPermissions(
-        guildId,
-        channelId
-    ) {
-
-        database.run(
-            `
-        DELETE FROM lockdown_permissions
-
-        WHERE guild_id = ?
-        AND channel_id = ?
-        `,
-            [
-                guildId,
-                channelId
-            ]
-        );
-
-    }
-
-
-    /**
-     * Limpa todo o estado salvo do lockdown.
-     */
-    static clearSavedPermissions(
-        guildId
-    ) {
-
-        database.run(
-            `
-        DELETE FROM lockdown_permissions
-
-        WHERE guild_id = ?
-        `,
-            [guildId]
-        );
-
-    }
-
 
 }
 

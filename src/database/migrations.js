@@ -4,8 +4,11 @@ const database = require("./DatabaseManager");
 function migrate() {
 
     /*
-     * Tabelas principais
+     * =====================================================
+     * TABELAS PRINCIPAIS
+     * =====================================================
      */
+
     database.exec(`
 
         CREATE TABLE IF NOT EXISTS guilds (
@@ -50,6 +53,8 @@ function migrate() {
 
             mod_log_channel_id TEXT,
 
+            lockdown_enabled INTEGER DEFAULT 0,
+
             created_at INTEGER NOT NULL
 
         );
@@ -71,6 +76,12 @@ function migrate() {
 
         );
 
+
+        /*
+         * Canais que devem continuar acessíveis
+         * durante o lockdown.
+         */
+
         CREATE TABLE IF NOT EXISTS lockdown_channels (
 
             guild_id TEXT NOT NULL,
@@ -83,6 +94,12 @@ function migrate() {
             )
 
         );
+
+
+        /*
+         * Permissões originais dos canais
+         * antes do lockdown.
+         */
 
         CREATE TABLE IF NOT EXISTS lockdown_permissions (
 
@@ -104,14 +121,14 @@ function migrate() {
 
     /*
      * =====================================================
-     * MIGRATIONS DE ESTRUTURA
+     * MIGRAÇÕES DE ESTRUTURA
      * =====================================================
      *
-     * O CREATE TABLE IF NOT EXISTS acima não altera
-     * tabelas que já existem.
+     * CREATE TABLE IF NOT EXISTS não altera uma tabela
+     * que já existe.
      *
-     * Por isso verificamos se a coluna já existe antes
-     * de adicioná-la.
+     * Por isso verificamos individualmente se as colunas
+     * necessárias já existem.
      */
 
 
@@ -121,6 +138,12 @@ function migrate() {
         `)
         .all();
 
+
+    /*
+     * =====================================================
+     * mod_log_channel_id
+     * =====================================================
+     */
 
     const hasModLogChannel =
         columns.some(
@@ -144,7 +167,39 @@ function migrate() {
     }
 
 
+    /*
+     * =====================================================
+     * lockdown_enabled
+     * =====================================================
+     */
 
+    const hasLockdownEnabled =
+        columns.some(
+            column =>
+                column.name === "lockdown_enabled"
+        );
+
+
+    if (!hasLockdownEnabled) {
+
+        database.exec(`
+            ALTER TABLE guild_settings
+            ADD COLUMN lockdown_enabled INTEGER DEFAULT 0
+        `);
+
+
+        console.log(
+            "🔄 Coluna lockdown_enabled adicionada."
+        );
+
+    }
+
+
+    /*
+     * =====================================================
+     * FINAL
+     * =====================================================
+     */
 
     console.log(
         "📦 Migrations executadas."

@@ -40,16 +40,18 @@ class GuildManager {
                 prefix,
                 log_channel_id,
                 mod_log_channel_id,
+                lockdown_enabled,
                 created_at
             )
 
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?)
             `,
             [
                 guild.id,
                 "/",
                 null,
                 null,
+                0,
                 Date.now()
             ]
         );
@@ -165,6 +167,57 @@ class GuildManager {
         );
 
     }
+
+
+    /**
+     * Define o estado do lockdown.
+     *
+     * true  = lockdown ativo
+     * false = lockdown desativado
+     */
+    static setLockdown(
+        guildId,
+        enabled
+    ) {
+
+        database.run(
+            `
+            UPDATE guild_settings
+
+            SET lockdown_enabled = ?
+
+            WHERE guild_id = ?
+            `,
+            [
+                enabled ? 1 : 0,
+                guildId
+            ]
+        );
+
+    }
+
+
+    /**
+     * Verifica se o servidor está em lockdown.
+     *
+     * Retorna:
+     * true  = ativo
+     * false = desativado
+     */
+    static isLockdownEnabled(
+        guildId
+    ) {
+
+        const settings =
+            this.get(guildId);
+
+
+        return Boolean(
+            settings?.lockdown_enabled
+        );
+
+    }
+
 
 }
 

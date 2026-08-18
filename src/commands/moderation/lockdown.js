@@ -2,20 +2,23 @@ const {
     SlashCommandBuilder,
     PermissionFlagsBits,
     ChannelType,
-    PermissionOverwrites,
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle
 } = require("discord.js");
 
+
 const LockdownManager =
     require("../../managers/LockdownManager");
+
+
+const GuildManager =
+    require("../../managers/GuildManager");
+
 
 const EmbedManager =
     require("../../utils/EmbedManager");
 
-const LogManager =
-    require("../../utils/LogManager");
 
 
 module.exports = {
@@ -92,10 +95,6 @@ module.exports = {
                             "Canal que será configurado."
                         )
 
-                        .addChannelTypes(
-                            ChannelType.GuildText
-                        )
-
                         .setRequired(false)
 
                 )
@@ -162,9 +161,16 @@ module.exports = {
             const acao =
                 interaction.options.getString("acao");
 
+
             const channel =
                 interaction.options.getChannel("canal");
 
+
+            /*
+             * =============================================
+             * ADICIONAR CANAL
+             * =============================================
+             */
 
             if (acao === "adicionar") {
 
@@ -230,6 +236,12 @@ module.exports = {
             }
 
 
+            /*
+             * =============================================
+             * REMOVER CANAL
+             * =============================================
+             */
+
             if (acao === "remover") {
 
                 if (!channel) {
@@ -294,6 +306,12 @@ module.exports = {
             }
 
 
+            /*
+             * =============================================
+             * LISTAR CANAIS
+             * =============================================
+             */
+
             if (acao === "listar") {
 
                 const channels =
@@ -331,6 +349,7 @@ module.exports = {
                                     id
                                 );
 
+
                             return channel
                                 ? `📢 ${channel}`
                                 : `⚠️ \`${id}\``;
@@ -366,8 +385,13 @@ module.exports = {
 
         if (subcommand === "ativar") {
 
+
+            /*
+             * Verifica o estado oficial no banco.
+             */
+
             if (
-                LockdownManager.isActive(
+                GuildManager.isLockdownEnabled(
                     guild.id
                 )
             ) {
@@ -377,7 +401,7 @@ module.exports = {
                     embeds: [
 
                         EmbedManager.error(
-                            "O lockdown já está ativo."
+                            "🔒 O lockdown já está ativo."
                         )
 
                     ]
@@ -389,6 +413,10 @@ module.exports = {
             }
 
 
+            /*
+             * Canais que permanecerão visíveis.
+             */
+
             const allowedChannels =
                 new Set(
                     LockdownManager
@@ -398,14 +426,34 @@ module.exports = {
                 );
 
 
+            /*
+             * Canais que serão afetados.
+             *
+             * Ignoramos apenas categorias.
+             *
+             * Isso inclui:
+             *
+             * - Texto
+             * - Fórum
+             * - Voz
+             * - Stage
+             *
+             * O bloqueio será feito pelo ViewChannel
+             * no interactionCreate.
+             */
+
             const channels =
                 guild.channels.cache.filter(
+
                     channel =>
-                        channel.type ===
-                            ChannelType.GuildText &&
+
+                        channel.type !==
+                            ChannelType.GuildCategory &&
+
                         !allowedChannels.has(
                             channel.id
                         )
+
                 );
 
 
@@ -429,32 +477,43 @@ module.exports = {
 
 
             /*
-             * Confirmação
+             * =============================================
+             * CONFIRMAÇÃO
+             * =============================================
              */
 
             const row =
                 new ActionRowBuilder()
                     .addComponents(
 
+
                         new ButtonBuilder()
+
                             .setCustomId(
                                 `lockdown_confirm_${guild.id}`
                             )
+
                             .setLabel(
                                 "Ativar Lockdown"
                             )
+
                             .setEmoji("🔒")
+
                             .setStyle(
                                 ButtonStyle.Danger
                             ),
 
+
                         new ButtonBuilder()
+
                             .setCustomId(
                                 `lockdown_cancel_${guild.id}`
                             )
+
                             .setLabel(
                                 "Cancelar"
                             )
+
                             .setStyle(
                                 ButtonStyle.Secondary
                             )
@@ -467,7 +526,20 @@ module.exports = {
                 embeds: [
 
                     EmbedManager.error(
-                        `⚠️ **ATENÇÃO**\n\nVocê está prestes a bloquear **${channels.size} canais**.\n\nOs membros comuns não poderão visualizar esses canais durante o lockdown.\n\nOs canais configurados como canais de emergência continuarão visíveis.`
+
+                        `⚠️ **ATENÇÃO**\n\n` +
+
+                        `Você está prestes a bloquear ` +
+                        `**${channels.size} canais**.\n\n` +
+
+                        `Os membros comuns não poderão ` +
+                        `visualizar esses canais durante ` +
+                        `o lockdown.\n\n` +
+
+                        `📢 Os canais configurados como ` +
+                        `canais de emergência continuarão ` +
+                        `visíveis.`
+
                     )
 
                 ],
@@ -491,8 +563,13 @@ module.exports = {
 
         if (subcommand === "desativar") {
 
+
+            /*
+             * Verifica o estado oficial no banco.
+             */
+
             if (
-                !LockdownManager.isActive(
+                !GuildManager.isLockdownEnabled(
                     guild.id
                 )
             ) {
@@ -502,7 +579,7 @@ module.exports = {
                     embeds: [
 
                         EmbedManager.error(
-                            "O lockdown não está ativo."
+                            "🔓 O lockdown não está ativo."
                         )
 
                     ]
@@ -514,29 +591,44 @@ module.exports = {
             }
 
 
+            /*
+             * =============================================
+             * CONFIRMAÇÃO
+             * =============================================
+             */
+
             const row =
                 new ActionRowBuilder()
                     .addComponents(
 
+
                         new ButtonBuilder()
+
                             .setCustomId(
                                 `unlockdown_confirm_${guild.id}`
                             )
+
                             .setLabel(
                                 "Desativar Lockdown"
                             )
+
                             .setEmoji("🔓")
+
                             .setStyle(
                                 ButtonStyle.Success
                             ),
 
+
                         new ButtonBuilder()
+
                             .setCustomId(
                                 `unlockdown_cancel_${guild.id}`
                             )
+
                             .setLabel(
                                 "Cancelar"
                             )
+
                             .setStyle(
                                 ButtonStyle.Secondary
                             )
@@ -549,7 +641,12 @@ module.exports = {
                 embeds: [
 
                     EmbedManager.success(
-                        "⚠️ **DESATIVAR LOCKDOWN?**\n\nAs permissões originais dos canais serão restauradas."
+
+                        `⚠️ **DESATIVAR LOCKDOWN?**\n\n` +
+
+                        `As permissões originais dos canais ` +
+                        `serão restauradas.`
+
                     )
 
                 ],
