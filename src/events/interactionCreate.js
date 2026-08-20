@@ -21,6 +21,12 @@ const EmbedInteractionHandler =
     EmbedInteractionHandlerModule.EmbedInteractionHandler ??
     EmbedInteractionHandlerModule;
 
+const TicketInteractionHandler =
+    require("../handlers/TicketInteractionHandler");
+
+const WelcomeInteractionHandler =
+    require("../handlers/WelcomeInteractionHandler");
+
 
 module.exports = {
 
@@ -30,11 +36,40 @@ module.exports = {
     async execute(interaction) {
 
 
+
+        if (
+            interaction.isButton() ||
+            interaction.isChannelSelectMenu() ||
+            interaction.isRoleSelectMenu()
+        ) {
+
+            const handled =
+                await TicketInteractionHandler.handle(
+                    interaction
+                );
+
+            if (handled) {
+                return;
+            }
+
+        }
+
+
+        if (
+            await WelcomeInteractionHandler.handle(
+                interaction
+            )
+        ) {
+
+            return;
+
+        }
+
         /*
- * =====================================================
- * INTERAÇÕES DO SISTEMA DE EMBEDS
- * =====================================================
- */
+        * =====================================================
+         * INTERAÇÕES DO SISTEMA DE EMBEDS
+         * =====================================================
+         */
 
         if (
             interaction.isButton() ||
@@ -79,6 +114,43 @@ module.exports = {
          * BOTÕES
          * =====================================================
          */
+
+
+        if (id === "ticket_open") {
+
+            return this.createTicket(
+                interaction
+            );
+
+        }
+
+
+        if (id === "ticket_close") {
+
+            return this.confirmCloseTicket(
+                interaction
+            );
+
+        }
+
+
+        if (id === "ticket_close_confirm") {
+
+            return this.closeTicket(
+                interaction
+            );
+
+        }
+
+
+        if (id === "ticket_close_cancel") {
+
+            return this.cancelCloseTicket(
+                interaction
+            );
+
+        }
+
 
         if (interaction.isButton()) {
 

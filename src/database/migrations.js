@@ -116,6 +116,48 @@ function migrate() {
 
         );
 
+
+        /*
+         * =================================================
+         * CONFIGURAÇÃO DO SISTEMA DE TICKETS
+         * =================================================
+         */
+
+        CREATE TABLE IF NOT EXISTS ticket_settings (
+
+            guild_id TEXT PRIMARY KEY,
+
+            panel_channel_id TEXT NOT NULL,
+
+            category_id TEXT NOT NULL,
+
+            support_role_id TEXT NOT NULL,
+
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+
+        );
+
+
+        /*
+         * =================================================
+         * CONFIGURAÇÃO DO SISTEMA DE BOAS VINDAS
+         * =================================================
+         */
+
+
+        CREATE TABLE IF NOT EXISTS welcome_settings (
+
+            guild_id TEXT PRIMARY KEY,
+
+            channel_id TEXT NOT NULL,
+
+            enabled INTEGER DEFAULT 1,
+
+            created_at INTEGER NOT NULL
+
+        );
+
+
     `);
 
 
