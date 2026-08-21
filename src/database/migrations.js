@@ -237,6 +237,33 @@ function migrate() {
     }
 
 
+    const welcomeColumns = database
+        .prepare(`
+        PRAGMA table_info(welcome_settings)
+    `)
+        .all();
+
+    const hasWelcomeEnabled =
+        welcomeColumns.some(
+            column =>
+                column.name === "enabled"
+        );
+
+    if (!hasWelcomeEnabled) {
+
+        database.exec(`
+        ALTER TABLE welcome_settings
+        ADD COLUMN enabled INTEGER DEFAULT 1
+    `);
+
+        console.log(
+            "🔄 Coluna enabled adicionada em welcome_settings."
+        );
+
+    }
+
+
+
     /*
      * =====================================================
      * FINAL

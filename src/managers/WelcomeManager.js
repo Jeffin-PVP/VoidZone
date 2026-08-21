@@ -5,34 +5,18 @@ const DatabaseManager =
 class WelcomeManager {
 
 
-    /*
-     * =====================================================
-     * BUSCAR CONFIGURAÇÃO
-     * =====================================================
-     */
-
     static getConfig(guildId) {
 
         return DatabaseManager
             .prepare(`
-
                 SELECT *
-
                 FROM welcome_settings
-
                 WHERE guild_id = ?
-
             `)
             .get(guildId);
 
     }
 
-
-    /*
-     * =====================================================
-     * SALVAR CONFIGURAÇÃO
-     * =====================================================
-     */
 
     static saveConfig(
         guildId,
@@ -42,32 +26,30 @@ class WelcomeManager {
         DatabaseManager
             .prepare(`
 
-                INSERT INTO welcome_settings (
+            INSERT INTO welcome_settings (
 
-                    guild_id,
-                    channel_id,
-                    enabled,
-                    created_at
+                guild_id,
+                channel_id,
+                enabled,
+                created_at
 
-                )
+            )
 
-                VALUES (?, ?, 1, ?)
+            VALUES (?, ?, 1, ?)
 
-                ON CONFLICT(guild_id)
+            ON CONFLICT(guild_id)
 
-                DO UPDATE SET
+            DO UPDATE SET
 
-                    channel_id =
-                        excluded.channel_id,
+                channel_id =
+                    excluded.channel_id
 
-                    enabled =
-                        1
-
-            `)
+        `)
             .run(
 
                 guildId,
                 channelId,
+
                 Date.now()
 
             );
@@ -82,49 +64,70 @@ class WelcomeManager {
 
     /*
      * =====================================================
-     * ATIVAR / DESATIVAR
+     * ATIVAR
      * =====================================================
      */
 
-    static setEnabled(
-        guildId,
-        enabled
-    ) {
+    static enable(guildId) {
 
-        DatabaseManager
+        return DatabaseManager
             .prepare(`
 
                 UPDATE welcome_settings
 
-                SET enabled = ?
+                SET enabled = 1
 
                 WHERE guild_id = ?
 
             `)
-            .run(
-
-                enabled ? 1 : 0,
-                guildId
-
-            );
-
-
-        return this.getConfig(
-            guildId
-        );
+            .run(guildId);
 
     }
 
 
     /*
      * =====================================================
-     * REMOVER CONFIGURAÇÃO
+     * DESATIVAR
      * =====================================================
      */
 
-    static deleteConfig(
-        guildId
-    ) {
+    static disable(guildId) {
+
+        return DatabaseManager
+            .prepare(`
+
+                UPDATE welcome_settings
+
+                SET enabled = 0
+
+                WHERE guild_id = ?
+
+            `)
+            .run(guildId);
+
+    }
+
+
+    /*
+     * =====================================================
+     * VERIFICAR SE ESTÁ ATIVO
+     * =====================================================
+     */
+
+    static isEnabled(guildId) {
+
+        const config =
+            this.getConfig(guildId);
+
+        return !!(
+            config &&
+            config.enabled === 1
+        );
+
+    }
+
+
+    static deleteConfig(guildId) {
 
         return DatabaseManager
             .prepare(`
@@ -139,15 +142,7 @@ class WelcomeManager {
     }
 
 
-    /*
-     * =====================================================
-     * VERIFICAR CONFIGURAÇÃO
-     * =====================================================
-     */
-
-    static isConfigured(
-        guildId
-    ) {
+    static isConfigured(guildId) {
 
         return !!this.getConfig(
             guildId

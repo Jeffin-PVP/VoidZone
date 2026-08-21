@@ -21,107 +21,6 @@ class WelcomeInteractionHandler {
 
     /*
      * =====================================================
-     * INICIAR SETUP
-     * =====================================================
-     */
-
-    static async startSetup(
-        interaction
-    ) {
-
-        const embed =
-            new EmbedBuilder()
-
-                .setTitle(
-                    "🎉 Configuração de Boas-vindas"
-                )
-
-                .setDescription(
-
-                    "Configure o sistema de boas-vindas.\n\n" +
-
-                    "Escolha o canal onde as mensagens " +
-                    "de novos membros serão enviadas."
-
-                )
-
-                .setColor(
-                    "#5865F2"
-                );
-
-
-        const channelSelect =
-            new ChannelSelectMenuBuilder()
-
-                .setCustomId(
-                    "welcome_setup_channel"
-                )
-
-                .setPlaceholder(
-                    "📢 Escolha o canal"
-                )
-
-                .setChannelTypes(
-                    ChannelType.GuildText
-                )
-
-                .setMinValues(1)
-
-                .setMaxValues(1);
-
-
-        const cancelButton =
-            new ButtonBuilder()
-
-                .setCustomId(
-                    "welcome_setup_cancel"
-                )
-
-                .setLabel(
-                    "Cancelar"
-                )
-
-                .setEmoji(
-                    "❌"
-                )
-
-                .setStyle(
-                    ButtonStyle.Danger
-                );
-
-
-        await interaction.reply({
-
-            embeds: [
-                embed
-            ],
-
-            components: [
-
-                new ActionRowBuilder()
-                    .addComponents(
-                        channelSelect
-                    ),
-
-                new ActionRowBuilder()
-                    .addComponents(
-                        cancelButton
-                    )
-
-            ],
-
-            ephemeral: true
-
-        });
-
-
-        return true;
-
-    }
-
-
-    /*
-     * =====================================================
      * HANDLER PRINCIPAL
      * =====================================================
      */
@@ -230,6 +129,156 @@ class WelcomeInteractionHandler {
 
     /*
      * =====================================================
+     * INICIAR SETUP
+     * =====================================================
+     */
+
+    static async startSetup(
+        interaction
+    ) {
+
+        const embed =
+            new EmbedBuilder()
+
+                .setTitle(
+                    "🎉 Configuração de Boas-vindas"
+                )
+
+                .setDescription(
+
+                    "Configure o sistema de boas-vindas.\n\n" +
+
+                    "Escolha o canal onde as mensagens " +
+                    "de novos membros serão enviadas."
+
+                )
+
+                .setColor(
+                    "#5865F2"
+                );
+
+
+        /*
+         * =================================================
+         * SELETOR DE CANAL
+         * =================================================
+         */
+
+        const channelSelect =
+            new ChannelSelectMenuBuilder()
+
+                .setCustomId(
+                    "welcome_setup_channel"
+                )
+
+                .setPlaceholder(
+                    "📢 Escolha o canal"
+                )
+
+                .setChannelTypes(
+                    ChannelType.GuildText
+                )
+
+                .setMinValues(1)
+
+                .setMaxValues(1);
+
+
+        /*
+         * =================================================
+         * BOTÃO CANCELAR
+         * =================================================
+         */
+
+        const cancelButton =
+            new ButtonBuilder()
+
+                .setCustomId(
+                    "welcome_setup_cancel"
+                )
+
+                .setLabel(
+                    "Cancelar"
+                )
+
+                .setEmoji(
+                    "❌"
+                )
+
+                .setStyle(
+                    ButtonStyle.Danger
+                );
+
+
+        /*
+         * =================================================
+         * ROWS
+         * =================================================
+         */
+
+        const channelRow =
+            new ActionRowBuilder()
+                .addComponents(
+                    channelSelect
+                );
+
+
+        const buttonRow =
+            new ActionRowBuilder()
+                .addComponents(
+                    cancelButton
+                );
+
+
+        /*
+         * =================================================
+         * RESPONDER À INTERAÇÃO
+         * =================================================
+         */
+
+        if (
+            interaction.replied ||
+            interaction.deferred
+        ) {
+
+            await interaction.editReply({
+
+                embeds: [
+                    embed
+                ],
+
+                components: [
+                    channelRow,
+                    buttonRow
+                ]
+
+            });
+
+        } else {
+
+            await interaction.reply({
+
+                embeds: [
+                    embed
+                ],
+
+                components: [
+                    channelRow,
+                    buttonRow
+                ]
+
+            });
+
+        }
+
+
+        return true;
+
+    }
+
+
+    /*
+     * =====================================================
      * SELECIONAR CANAL
      * =====================================================
      */
@@ -241,6 +290,11 @@ class WelcomeInteractionHandler {
         const channelId =
             interaction.values[0];
 
+
+        /*
+         * Salva temporariamente
+         * a configuração do usuário.
+         */
 
         setupSessions.set(
 
@@ -264,6 +318,49 @@ class WelcomeInteractionHandler {
             );
 
 
+        if (!channel) {
+
+            await interaction.update({
+
+                embeds: [
+
+                    new EmbedBuilder()
+
+                        .setTitle(
+                            "❌ Canal inválido"
+                        )
+
+                        .setDescription(
+                            "Não consegui encontrar o canal selecionado."
+                        )
+
+                        .setColor(
+                            "#ED4245"
+                        )
+
+                ],
+
+                components: []
+
+            });
+
+
+            setupSessions.delete(
+                interaction.user.id
+            );
+
+
+            return true;
+
+        }
+
+
+        /*
+         * =================================================
+         * EMBED DE CONFIRMAÇÃO
+         * =================================================
+         */
+
         const embed =
             new EmbedBuilder()
 
@@ -278,7 +375,9 @@ class WelcomeInteractionHandler {
                     `📢 **Canal:** ${channel}\n\n` +
 
                     "Novos membros receberão a mensagem " +
-                    "de boas-vindas nesse canal."
+                    "de boas-vindas nesse canal.\n\n" +
+
+                    "Deseja confirmar essa configuração?"
 
                 )
 
@@ -286,6 +385,12 @@ class WelcomeInteractionHandler {
                     "#57F287"
                 );
 
+
+        /*
+         * =================================================
+         * BOTÃO CONFIRMAR
+         * =================================================
+         */
 
         const confirmButton =
             new ButtonBuilder()
@@ -307,6 +412,12 @@ class WelcomeInteractionHandler {
                 );
 
 
+        /*
+         * =================================================
+         * BOTÃO CANCELAR
+         * =================================================
+         */
+
         const cancelButton =
             new ButtonBuilder()
 
@@ -327,6 +438,17 @@ class WelcomeInteractionHandler {
                 );
 
 
+        const row =
+            new ActionRowBuilder()
+                .addComponents(
+
+                    confirmButton,
+
+                    cancelButton
+
+                );
+
+
         await interaction.update({
 
             embeds: [
@@ -334,16 +456,7 @@ class WelcomeInteractionHandler {
             ],
 
             components: [
-
-                new ActionRowBuilder()
-                    .addComponents(
-
-                        confirmButton,
-
-                        cancelButton
-
-                    )
-
+                row
             ]
 
         });
@@ -444,6 +557,10 @@ class WelcomeInteractionHandler {
 
         );
 
+
+        /*
+         * Remove a sessão temporária
+         */
 
         setupSessions.delete(
             interaction.user.id

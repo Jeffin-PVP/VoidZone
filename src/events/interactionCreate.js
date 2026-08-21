@@ -65,6 +65,15 @@ module.exports = {
 
         }
 
+
+        const id = interaction.customId;
+
+        if (id === "welcome_setup_channel") {
+            return WelcomeInteractionHandler.handle(interaction);
+        }
+
+
+
         /*
         * =====================================================
          * INTERAÇÕES DO SISTEMA DE EMBEDS
