@@ -32,6 +32,8 @@ function migrate() {
 
             coins INTEGER DEFAULT 0,
 
+            bank_coins INTEGER DEFAULT 0,
+
             xp INTEGER DEFAULT 0,
 
             level INTEGER DEFAULT 1,
@@ -39,6 +41,31 @@ function migrate() {
             created_at INTEGER NOT NULL,
 
             PRIMARY KEY (id, guild_id)
+
+        );
+
+
+        /*
+         * =================================================
+         * HISTÓRICO DA ECONOMIA
+         * =================================================
+         */
+
+        CREATE TABLE IF NOT EXISTS transactions (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            guild_id TEXT NOT NULL,
+
+            user_id TEXT NOT NULL,
+
+            type TEXT NOT NULL,
+
+            amount INTEGER NOT NULL,
+
+            description TEXT,
+
+            created_at INTEGER NOT NULL
 
         );
 
@@ -140,10 +167,9 @@ function migrate() {
 
         /*
          * =================================================
-         * CONFIGURAÇÃO DO SISTEMA DE BOAS VINDAS
+         * CONFIGURAÇÃO DO SISTEMA DE BOAS-VINDAS
          * =================================================
          */
-
 
         CREATE TABLE IF NOT EXISTS welcome_settings (
 
@@ -156,7 +182,6 @@ function migrate() {
             created_at INTEGER NOT NULL
 
         );
-
 
     `);
 
@@ -173,6 +198,12 @@ function migrate() {
      * necessárias já existem.
      */
 
+
+    /*
+     * =====================================================
+     * GUILD SETTINGS
+     * =====================================================
+     */
 
     const columns = database
         .prepare(`
@@ -237,11 +268,65 @@ function migrate() {
     }
 
 
+    /*
+     * =====================================================
+     * USERS
+     * =====================================================
+     */
+
+    const userColumns = database
+        .prepare(`
+            PRAGMA table_info(users)
+        `)
+        .all();
+
+
+    /*
+     * =====================================================
+     * bank_coins
+     * =====================================================
+     */
+
+    const hasBankCoins =
+        userColumns.some(
+            column =>
+                column.name === "bank_coins"
+        );
+
+
+    if (!hasBankCoins) {
+
+        database.exec(`
+            ALTER TABLE users
+            ADD COLUMN bank_coins INTEGER DEFAULT 0
+        `);
+
+
+        console.log(
+            "🔄 Coluna bank_coins adicionada."
+        );
+
+    }
+
+
+    /*
+     * =====================================================
+     * WELCOME SETTINGS
+     * =====================================================
+     */
+
     const welcomeColumns = database
         .prepare(`
-        PRAGMA table_info(welcome_settings)
-    `)
+            PRAGMA table_info(welcome_settings)
+        `)
         .all();
+
+
+    /*
+     * =====================================================
+     * enabled
+     * =====================================================
+     */
 
     const hasWelcomeEnabled =
         welcomeColumns.some(
@@ -249,19 +334,20 @@ function migrate() {
                 column.name === "enabled"
         );
 
+
     if (!hasWelcomeEnabled) {
 
         database.exec(`
-        ALTER TABLE welcome_settings
-        ADD COLUMN enabled INTEGER DEFAULT 1
-    `);
+            ALTER TABLE welcome_settings
+            ADD COLUMN enabled INTEGER DEFAULT 1
+        `);
+
 
         console.log(
             "🔄 Coluna enabled adicionada em welcome_settings."
         );
 
     }
-
 
 
     /*
